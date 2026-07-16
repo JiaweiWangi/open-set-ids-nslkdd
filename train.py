@@ -20,8 +20,11 @@ from data_utils import load_csv, build_encoder, transform, feature_dim
 from model import Classifier, Autoencoder
 from openmax import fit_weibull, openmax_predict
 
-SEED = 42
+import os as _os
+SEED = int(_os.environ.get("SEED", "42"))
 torch.manual_seed(SEED); np.random.seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
 import os
 _FORCE = os.environ.get("DEVICE", "").lower()
 if _FORCE in ("cuda", "mps", "cpu"):
@@ -56,11 +59,16 @@ def class_weights(labels, n_classes):
 
 
 def train_classifier(X, y, in_dim, n_classes):
-    model = Classifier(in_dim, n_classes).to(DEVICE)
-    opt = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=1e-4)
+    import os as _os
+    LS = float(_os.environ.get("CLS_LS", "0.05"))      # label smoothing
+    LR = float(_os.environ.get("CLS_LR", "2e-3"))      # 学习率
+    DROP = float(_os.environ.get("CLS_DROP", "0.4"))   # dropout
+    model = Classifier(in_dim, n_classes, p=DROP).to(DEVICE)
+    opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=EPOCHS_CLS)
     w = class_weights(y, n_classes)
-    crit = nn.CrossEntropyLoss(weight=w, label_smoothing=0.05)
+    crit = nn.CrossEntropyLoss(weight=w, label_smoothing=LS)
+    print(f"  [cls] 配置: ls={LS} lr={LR} drop={DROP} seed={SEED}", flush=True)
     Xt = torch.tensor(X, dtype=torch.float32, device=DEVICE)
     yt = torch.tensor(y, dtype=torch.long, device=DEVICE)
     ds = TensorDataset(Xt, yt)
