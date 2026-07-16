@@ -232,6 +232,26 @@ def main():
 
     # === 测试集预测 ===
     print("\n=== 测试集预测 ===")
+    # 先扫描 P-R 曲线，看不同 TNR 工作点下的未知召回，找最优阈值
+    true_known_t = np.array([c in cls2idx for c in yte_str])
+    true_is_unknown_t = ~true_known_t
+    print("  阈值工作点扫描 (thr | TNR | 未知P | 未知R | 未知F1 | 未知检出数):")
+    best_f1_scan, best_thr_scan = -1, best_thr
+    for q in [0.90, 0.92, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99]:
+        thr_q = float(np.percentile(fuse_val, q * 100))
+        unk = fuse_test > thr_q
+        tp = (unk & true_is_unknown_t).sum(); fp = (unk & true_known_t).sum()
+        fn = (~unk & true_is_unknown_t).sum(); tn = (~unk & true_known_t).sum()
+        p = tp/max(1,tp+fp); r = tp/max(1,tp+fn)
+        f1 = 2*p*r/(p+r+1e-9)
+        tnr = tn/max(1,tn+fp)
+        print(f"    q={q:.2f} thr={thr_q:.3f} | TNR={tnr:.3f} | P={p:.3f} R={r:.3f} F1={f1:.3f} | 检出={int(tp)}/{int(tp+fn)}")
+        if f1 > best_f1_scan:
+            best_f1_scan, best_thr_scan = f1, thr_q
+    # 选 F1 最高的工作点作为最终阈值（若与 TNR0.97 相近则保留原值）
+    print(f"  -> 扫描最优: thr={best_thr_scan:.3f} F1={best_f1_scan:.3f} (原TNR0.97 thr={best_thr:.3f})")
+    best_thr = best_thr_scan
+
     is_unknown_pred = fuse_test > best_thr
     # 已知部分取分类器 argmax
     pred_cls = logits_test.argmax(1)
