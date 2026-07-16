@@ -213,13 +213,14 @@ def main():
         x = (a - lo) / (hi - lo + 1e-9)
         return np.clip(x, 0, 1)
 
-    # 融合：OOD 头为主（直接建模未知），马氏+softmax+AE 为辅，OpenMax 极弱
-    W = {"ood": 0.50, "mah": 0.25, "smax": 0.12, "err": 0.08, "om": 0.05}
-    fuse_val = (W["ood"]*norm01(ood_val) + W["mah"]*norm01(mah_val)
-                + W["smax"]*norm01(1-smax_val) + W["err"]*norm01(err_val)
+    # 融合：多信号互补。OOD头对类间空隙未知强但伤类内重叠，故不作主导；
+    # 马氏(类间)+AE(mailbomb类)+OOD头(processtable类)+softmax(自信度) 互补。
+    W = {"mah": 0.32, "ood": 0.28, "err": 0.20, "smax": 0.12, "om": 0.08}
+    fuse_val = (W["mah"]*norm01(mah_val) + W["ood"]*norm01(ood_val)
+                + W["err"]*norm01(err_val) + W["smax"]*norm01(1-smax_val)
                 + W["om"]*norm01(om_val[:, -1]))
-    fuse_test = (W["ood"]*norm01(ood_test) + W["mah"]*norm01(mah_test)
-                 + W["smax"]*norm01(1-smax_test) + W["err"]*norm01(err_test)
+    fuse_test = (W["mah"]*norm01(mah_test) + W["ood"]*norm01(ood_test)
+                 + W["err"]*norm01(err_test) + W["smax"]*norm01(1-smax_test)
                  + W["om"]*norm01(om_test[:, -1]))
 
     # === 阈值标定：马氏距离 χ² 统计 + 验证集 TNR 校准 ===
@@ -309,11 +310,18 @@ def main():
         det = (is_unknown_pred[m]).mean()
         print(f"  {c:16s} n={m.sum():4d} 检出率={det:.3f}")
 
-    # 保存预测
+    # 保存预测 + 所有原始 OOD 信号（离线调权重无需重训）
     np.save("pred_labels.npy", pred_label)
     np.save("pred_unknown_flag.npy", is_unknown_pred)
     np.save("fuse_test.npy", fuse_test)
-    print("\n预测已保存: pred_labels.npy, pred_unknown_flag.npy, fuse_test.npy")
+    np.save("sig_ood_test.npy", ood_test)
+    np.save("sig_mah_test.npy", mah_test)
+    np.save("sig_err_test.npy", err_test)
+    np.save("sig_smax_test.npy", smax_test)
+    np.save("sig_om_test.npy", om_test[:, -1])
+    np.save("yte_str.npy", np.array(yte_str))
+    np.save("pred_cls_test.npy", pred_cls)
+    print("\n预测已保存: pred_labels.npy 等 + 5个信号 sig_*.npy")
     print("=== 完成 ===")
 
 
