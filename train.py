@@ -319,6 +319,36 @@ def main():
         det = (is_unknown_pred[m]).mean()
         print(f"  {c:16s} n={m.sum():4d} 检出率={det:.3f}")
 
+    # 各已知类逐类统计（开集视角）
+    # 召回率: 真值=c 且 预测=c / 真值=c
+    # 接受率: 真值=c 且 未被判unknown / 真值=c  (被误判成别的已知类也算"接受")
+    # 精确率: 预测=c 中 真值=c 的比例
+    print("\n各已知类逐类统计 (rec=分类召回 acc=接受率(未判unknown) prec=精确率):")
+    yte_arr = np.array(yte_str)
+    print(f"  {'class':16s} {'n':>5s} {'rec':>6s} {'accept':>7s} {'prec':>6s} {'F1':>6s}")
+    known_metrics = []
+    for c in known_classes:
+        m_true = yte_arr == c
+        n = m_true.sum()
+        if n == 0:
+            # 该类在测试集无样本(如 warezclient/spy)
+            print(f"  {c:16s} {n:>5d}   (测试集无样本)")
+            continue
+        pred_c = pred_label == c
+        tp = (pred_c & m_true).sum()
+        rec = tp / n                                  # 分类召回
+        accept = (~is_unknown_pred[m_true]).mean()    # 接受率(未被判unknown)
+        prec = tp / max(1, pred_c.sum())              # 精确率
+        f1 = 2*prec*rec/(prec+rec+1e-9)
+        known_metrics.append((c, n, rec, accept, prec, f1))
+        print(f"  {c:16s} {n:>5d} {rec:>6.3f} {accept:>7.3f} {prec:>6.3f} {f1:>6.3f}")
+    if known_metrics:
+        import numpy as _np
+        avg_rec = _np.mean([x[2] for x in known_metrics])
+        avg_acc = _np.mean([x[3] for x in known_metrics])
+        avg_f1 = _np.mean([x[5] for x in known_metrics])
+        print(f"  {'(macro平均)':16s}       {avg_rec:>6.3f} {avg_acc:>7.3f} {'':>6s} {avg_f1:>6.3f}")
+
     # 保存预测 + 所有原始 OOD 信号（离线调权重无需重训）
     np.save("pred_labels.npy", pred_label)
     np.save("pred_unknown_flag.npy", is_unknown_pred)
