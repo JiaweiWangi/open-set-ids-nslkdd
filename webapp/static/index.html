@@ -17,6 +17,7 @@
   <nav class="tabs">
     <button class="tab-btn active" data-tab="overview">📊 数据集概览</button>
     <button class="tab-btn" data-tab="evaluate">🔍 批量评估</button>
+    <button class="tab-btn" data-tab="model">🧠 模型方案</button>
   </nav>
 
   <!-- Tab 1: 数据集概览 -->
@@ -70,6 +71,52 @@
         <h2>混淆矩阵 (24类: 23已知 + unknown)</h2>
         <div id="chart-confusion" class="chart tall"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- Tab 3: 模型方案 -->
+  <section id="tab-model" class="tab-content">
+    <div class="card">
+      <h2>方案总览</h2>
+      <p class="hint" id="model-title"></p>
+      <div class="stats-grid" id="model-stats"></div>
+    </div>
+
+    <div class="card">
+      <h2>整体架构 (数据流)</h2>
+      <div id="arch-diagram" class="arch-diagram"></div>
+    </div>
+
+    <div class="card">
+      <h2>① MLP 分类器 — 已知类识别</h2>
+      <div id="clf-layers" class="layer-list"></div>
+      <p class="hint" id="clf-purpose"></p>
+    </div>
+
+    <div class="card">
+      <h2>② 自编码器 — 未知检测 (OOD 主信号)</h2>
+      <div id="ae-layers" class="layer-list"></div>
+      <p class="hint" id="ae-purpose"></p>
+    </div>
+
+    <div class="card">
+      <h2>OOD 融合判定</h2>
+      <div id="ood-fusion"></div>
+    </div>
+
+    <div class="card">
+      <h2>为什么用 AE 误差作 OOD 主信号?</h2>
+      <ul id="why-ae" class="reason-list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>关键技术决策</h2>
+      <div id="key-decisions"></div>
+    </div>
+
+    <div class="card">
+      <h2>训练配置</h2>
+      <div id="training-config" class="stats-grid"></div>
     </div>
   </section>
 </div>

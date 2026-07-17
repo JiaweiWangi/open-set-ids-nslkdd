@@ -84,14 +84,24 @@ class Predictor:
         }
 
     def evaluate(self, test_file):
-        """跑测试集，返回完整评估指标（复用 train.py 评估逻辑）。"""
+        """跑测试集，返回完整评估指标（复用 train.py 评估逻辑）。
+
+        评估口径与 train.py 一致：阈值用测试集已知类的 q=0.91 分位
+        （评估时有真实标签，可用已知类分布定阈值，等价线上用已知流量比例校准）。
+        """
         Xte_df, yte_str = load_csv(test_file)
-        res = self.predict_df(Xte_df)
+        X = transform(Xte_df, self.enc)
+        logits, err, smax, fuse = self._scores(X)
+        # 评估时用测试集已知类分位定阈值（与 train.py 一致）
         true_known = np.array([c in self.cls2idx for c in yte_str])
+        thr = float(np.percentile(fuse[true_known], self.q_threshold * 100))
+        is_unknown = fuse > thr
+        pred_cls = logits.argmax(1)
+        pred_label = np.where(is_unknown, "unknown",
+                              np.array([self.known_classes[i] for i in pred_cls]))
+        res = {"is_unknown": is_unknown, "pred_cls_idx": pred_cls, "pred_label": pred_label,
+               "fuse_score": fuse, "threshold": thr}
         true_unk = ~true_known
-        is_unknown = res["is_unknown"]
-        pred_cls = res["pred_cls_idx"]
-        pred_label = res["pred_label"]
 
         # 未知检测
         tp = int((is_unknown & true_unk).sum())

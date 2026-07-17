@@ -70,3 +70,38 @@ tr:hover { background: #fafbfc; }
 .unknown-item.overlap { background: #fdf0f0; }
 .unknown-item .name { color: #2c3e50; }
 .unknown-item .count { color: #6b7c93; font-weight: 600; }
+
+/* 模型方案 Tab */
+.arch-diagram { padding: 10px 0; }
+.arch-flow { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.arch-node { background: #fff; border: 2px solid #3498db; border-radius: 8px; padding: 12px 20px;
+  text-align: center; min-width: 220px; font-weight: 600; color: #1a3a5c; }
+.arch-node small { font-weight: 400; color: #6b7c93; font-size: 11px; }
+.arch-node.input { border-color: #95a5a6; background: #f8fafc; }
+.arch-node.clf { border-color: #3498db; background: #ebf5fb; }
+.arch-node.ae { border-color: #27ae60; background: #eafaf1; }
+.arch-node.out { border-color: #95a5a6; background: #f8fafc; min-width: 180px; }
+.arch-node.fusion { border-color: #e67e22; background: #fef5e7; }
+.arch-node.decision { border-color: #8e44ad; background: #f4ecf7; display: flex; flex-direction: column; gap: 4px; }
+.branch-yes { color: #c0392b; }
+.branch-no { color: #27ae60; }
+.arch-arrow { color: #bdc3c7; font-size: 20px; font-weight: 700; }
+.arch-branch { display: flex; gap: 40px; }
+.arch-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+.layer-list { display: flex; flex-direction: column; gap: 8px; }
+.layer-item { display: flex; align-items: center; gap: 12px; }
+.layer-idx { width: 28px; height: 28px; border-radius: 50%; background: #3498db; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.layer-body { flex: 1; background: #f8fafc; padding: 8px 14px; border-radius: 6px; border-left: 3px solid #3498db; }
+.layer-name { font-weight: 600; color: #1a3a5c; }
+.layer-shape { font-size: 12px; color: #6b7c93; font-family: monospace; }
+
+.formula { background: #1a3a5c; color: #fff; padding: 14px 18px; border-radius: 8px;
+  font-family: monospace; font-size: 14px; text-align: center; margin-bottom: 10px; }
+.reason-list { list-style: none; padding-left: 0; }
+.reason-list li { padding: 8px 14px; background: #f8fafc; border-left: 3px solid #27ae60;
+  border-radius: 4px; margin-bottom: 6px; }
+.decision-item { background: #f8fafc; padding: 12px 16px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #e67e22; }
+.decision-k { font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
+.decision-v { font-size: 13px; color: #4a5a6b; }

@@ -166,6 +166,103 @@ function renderEval(d) {
   });
 }
 
+// ===== Tab 3: 模型方案 =====
+async function loadModel() {
+  const res = await fetch(`${API}/api/model`);
+  const d = await res.json();
+
+  document.getElementById('model-title').textContent = d.title;
+  const stats = [
+    {label: '输入维度', value: d.in_dim, cls: ''},
+    {label: '已知类数', value: d.n_classes, cls: 'green'},
+    {label: '分类器参数量', value: d.clf_params.toLocaleString(), cls: 'blue'},
+    {label: '自编码器参数量', value: d.ae_params.toLocaleString(), cls: 'blue'},
+    {label: '未知检测 F1', value: d.results.unknown_f1, cls: 'green'},
+    {label: '已知类 acc', value: d.results.known_acc, cls: 'orange'},
+  ];
+  document.getElementById('model-stats').innerHTML = stats.map(s =>
+    `<div class="stat-item"><div class="label">${s.label}</div><div class="value ${s.cls}">${s.value}</div></div>`
+  ).join('');
+
+  // 架构图 (CSS 流程图)
+  document.getElementById('arch-diagram').innerHTML = `
+    <div class="arch-flow">
+      <div class="arch-node input">输入样本<br><small>41 特征 → ${d.in_dim}维预处理</small></div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-branch">
+        <div class="arch-col">
+          <div class="arch-node clf">MLP 分类器</div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-node out">23 类 logits<br><small>+ softmax 最大概率</small></div>
+        </div>
+        <div class="arch-col">
+          <div class="arch-node ae">自编码器</div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-node out">重构误差<br><small>(OOD 主信号)</small></div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-node fusion">融合: 0.818×AE误差 + 0.182×(1−softmax)</div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-node decision">
+        <span class="branch-yes">score &gt; 阈值 → <b>unknown</b></span>
+        <span class="branch-no">否则 → <b>已知类 argmax</b></span>
+      </div>
+    </div>`;
+
+  // 分类器层
+  document.getElementById('clf-layers').innerHTML = renderLayers(d.classifier.layers);
+  document.getElementById('clf-purpose').innerHTML =
+    `<b>损失:</b> ${d.classifier.loss}<br><b>作用:</b> ${d.classifier.purpose}`;
+
+  // AE 层
+  document.getElementById('ae-layers').innerHTML = renderLayers(d.autoencoder.layers);
+  document.getElementById('ae-purpose').innerHTML =
+    `<b>损失:</b> ${d.autoencoder.loss}<br><b>作用:</b> ${d.autoencoder.purpose}`;
+
+  // OOD 融合
+  document.getElementById('ood-fusion').innerHTML = `
+    <div class="formula">${d.ood_fusion.formula}</div>
+    <p class="hint"><b>判定规则:</b> ${d.ood_fusion.rule}</p>
+    <p class="hint"><b>阈值:</b> ${d.ood_fusion.threshold}</p>`;
+
+  // 为什么 AE
+  document.getElementById('why-ae').innerHTML = d.why_ae.map(r => `<li>${r}</li>`).join('');
+
+  // 关键决策
+  document.getElementById('key-decisions').innerHTML = d.key_decisions.map(kd => `
+    <div class="decision-item">
+      <div class="decision-k">${kd.k}</div>
+      <div class="decision-v">${kd.v}</div>
+    </div>`).join('');
+
+  // 训练配置
+  const t = d.training;
+  const tstats = [
+    {label: '分类器 epoch', value: t.epochs_cls},
+    {label: 'AE epoch', value: t.epochs_ae},
+    {label: '分类器 lr', value: t.lr_cls},
+    {label: 'AE lr', value: t.lr_ae},
+    {label: 'batch size', value: t.batch},
+    {label: '随机种子', value: t.seed},
+  ];
+  document.getElementById('training-config').innerHTML = tstats.map(s =>
+    `<div class="stat-item"><div class="label">${s.label}</div><div class="value">${s.value}</div></div>`
+  ).join('');
+}
+
+function renderLayers(layers) {
+  return layers.map((l, i) => `
+    <div class="layer-item">
+      <div class="layer-idx">${i + 1}</div>
+      <div class="layer-body">
+        <div class="layer-name">${l.name}</div>
+        <div class="layer-shape">${l.shape}</div>
+      </div>
+    </div>`).join('');
+}
+
 // 初始化
 loadOverview();
 loadTestFiles();
+loadModel();
