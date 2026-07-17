@@ -205,6 +205,11 @@ def loo_threshold_calibration(scores_known, scores_loo_unknown, target_tnr=0.95)
 
 
 def main():
+    # 每次调用都复位种子，保证 webui 常驻进程下多次训练可复现
+    # (模块级种子只在 import 时执行一次，不足以复位后续 main() 调用)
+    torch.manual_seed(SEED); np.random.seed(SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(SEED)
     print("=== 加载数据 ===")
     Xtr_df, ytr_str = load_csv(TRAIN_FILE)
     Xte_df, yte_str = load_csv(TEST_FILE)
