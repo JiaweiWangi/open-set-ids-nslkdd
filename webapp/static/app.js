@@ -50,7 +50,7 @@ async function loadOverview() {
         <tr>
           <td>${u.attack}</td>
           <td>${u.n}</td>
-          <td>${u.is_overlap ? '<span class="tag overlap">重叠(无法检出)</span>' : '<span class="tag ok">可检出</span>'}</td>
+          <td>${u.is_overlap ? '<span class="tag overlap">无法检出</span>' : '<span class="tag ok">可检出</span>'}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
@@ -171,6 +171,34 @@ function renderEval(d) {
     series: [{ type: 'heatmap', data: data,
       label: { show: false },
       emphasis: { itemStyle: { shadowBlur: 10 } } }],
+  });
+
+  // ROC / PR 曲线
+  const rpChart = echarts.init(document.getElementById('chart-roc-pr'));
+  const roc = d.roc, pr = d.pr, wp = d.working_point || {};
+  const rocPts = roc.fpr.map((f, i) => [f, roc.tpr[i]]);
+  const prPts = pr.recall.map((r, i) => [r, pr.precision[i]]);
+  rpChart.setOption({
+    tooltip: { trigger: 'axis', formatter: p => `${p[0].seriesName}<br/>${p[0].value[0]}, ${p[0].value[1]}` },
+    legend: { data: [`ROC (AUC=${roc.auc})`, `PR (AUC=${pr.auc})`, '当前工作点'], top: 0, textStyle: { color: '#86868b' } },
+    grid: { left: 55, right: 30, bottom: 40, top: 40 },
+    xAxis: { type: 'value', min: 0, max: 1, name: 'FPR / Recall',
+      nameTextStyle: { color: '#86868b' }, axisLabel: { color: '#86868b' },
+      axisLine: { lineStyle: { color: '#d2d2d7' } }, splitLine: { lineStyle: { color: '#e5e5ea' } } },
+    yAxis: { type: 'value', min: 0, max: 1, name: 'TPR / Precision',
+      nameTextStyle: { color: '#86868b' }, axisLabel: { color: '#86868b' },
+      axisLine: { lineStyle: { color: '#d2d2d7' } }, splitLine: { lineStyle: { color: '#e5e5ea' } } },
+    series: [
+      { name: `ROC (AUC=${roc.auc})`, type: 'line', data: rocPts, smooth: true, showSymbol: false,
+        lineStyle: { color: '#007aff', width: 2 }, areaStyle: { color: 'rgba(0,122,255,0.08)' } },
+      { name: `PR (AUC=${pr.auc})`, type: 'line', data: prPts, smooth: true, showSymbol: false,
+        lineStyle: { color: '#34c759', width: 2 } },
+      { name: '当前工作点', type: 'scatter', data: [[wp.fpr, wp.tpr]],
+        symbolSize: 12, itemStyle: { color: '#ff3b30' },
+        label: { show: true, formatter: `工作点(${wp.fpr},${wp.tpr})`, position: 'top', color: '#ff3b30', fontSize: 11 } },
+      { name: '对角线', type: 'line', data: [[0,0],[1,1]], showSymbol: false,
+        lineStyle: { color: '#d2d2d7', type: 'dashed' }, tooltip: { show: false } },
+    ],
   });
 }
 

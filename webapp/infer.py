@@ -156,6 +156,22 @@ class Predictor:
         overall_acc = accuracy_score(y_true_all, pred_label)
         overall_mf1 = f1_score(y_true_all, pred_label, labels=labels, average="macro", zero_division=0)
 
+        # ROC / PR 曲线 (unknown=正类, fuse 分数为判别分数)
+        from sklearn.metrics import roc_curve, precision_recall_curve, auc
+        y_bin = true_unk.astype(int)
+        fpr, tpr, _ = roc_curve(y_bin, fuse)
+        roc_auc = float(auc(fpr, tpr))
+        prec_c, rec_c, _ = precision_recall_curve(y_bin, fuse)
+        pr_auc = float(auc(rec_c, prec_c))
+        # 下采样到 300 点,减小传输
+        def _resample(a, n=300):
+            if len(a) <= n:
+                return a
+            idx = np.linspace(0, len(a) - 1, n).astype(int)
+            return a[idx]
+        fpr_s = _resample(fpr); tpr_s = _resample(tpr)
+        prec_s = _resample(prec_c); rec_s = _resample(rec_c)
+
         return {
             "unknown_detection": {"P": round(p, 3), "R": round(r, 3), "F1": round(f1, 3),
                                    "TP": tp, "FP": fp, "FN": fn, "TN": tn, "TNR": round(tnr, 3)},
@@ -167,6 +183,13 @@ class Predictor:
             "confusion_matrix": cm.tolist(),
             "labels": labels,
             "n_test": len(yte_str),
+            "roc": {"fpr": [round(float(x), 4) for x in fpr_s],
+                    "tpr": [round(float(x), 4) for x in tpr_s],
+                    "auc": round(roc_auc, 3)},
+            "pr": {"precision": [round(float(x), 4) for x in prec_s],
+                   "recall": [round(float(x), 4) for x in rec_s],
+                   "auc": round(pr_auc, 3)},
+            "working_point": {"fpr": round(1 - tnr, 3), "tpr": round(r, 3)},
         }
 
 

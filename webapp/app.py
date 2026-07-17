@@ -33,6 +33,7 @@ TEST_FILE = os.path.join(ROOT, "train_test")
 
 # 懒加载模型 (首次 evaluate 时加载)
 _predictor = None
+_results_cache = None   # 评估指标缓存,训练后清除
 
 
 def get_predictor():
@@ -87,8 +88,9 @@ def _run_training(cfg: dict):
         with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
             T.main()
         # 训练完成 → 重载模型并评估
-        global _predictor
+        global _predictor, _results_cache
         _predictor = None
+        _results_cache = None
         p = get_predictor()
         _train_state["metrics"] = p.evaluate(TEST_FILE)
         _train_state["stage"] = "完成"
@@ -139,7 +141,7 @@ def overview():
         "test_known_dist": test_known_dist,
         "feature_dim": Xtr_df.shape[1],
         "overlap_attacks": sorted(overlap_attacks),
-        "note": "重叠未知攻击在原始41特征上与已知类100%重叠，属NSL-KDD数据极限，无法检出",
+        "note": "以下未知攻击无法检出(特征重叠或锚点类标签漂移),属NSL-KDD数据极限,非方法问题",
     }
 
 
@@ -217,6 +219,31 @@ def train_status():
     }
 
 
+def _current_results():
+    """动态读取当前模型的评估指标,保证模型方案Tab与实际模型/评估Tab一致。
+
+    每次重训后指标会变(MPS 上同种子也有 ±0.02 波动),硬编码会过时,
+    故实时跑一次 evaluate 并缓存;训练后由 _run_training 清除缓存。
+    模型未训练时返回 null。
+    """
+    global _results_cache
+    if _results_cache is not None:
+        return _results_cache
+    try:
+        p = get_predictor()
+        ev = p.evaluate(TEST_FILE)
+        u, k, o = ev["unknown_detection"], ev["known_classification"], ev["overall"]
+        _results_cache = {
+            "unknown_f1": u["F1"], "unknown_p": u["P"], "unknown_r": u["R"],
+            "known_acc": k["acc"], "known_macro_f1": k["macro_f1"],
+            "overall_acc": o["acc"], "tnr": u["TNR"],
+        }
+        return _results_cache
+    except Exception:
+        return {"unknown_f1": None, "unknown_p": None, "unknown_r": None,
+                "known_acc": None, "overall_acc": None, "tnr": None}
+
+
 @app.get("/api/model")
 def model_info():
     """模型方案展示：架构、原理、训练配置。"""
@@ -258,7 +285,7 @@ def model_info():
             "name": "自编码器 (未知检测 OOD 主信号)",
             "layers": [
                 {"name": "输入", "shape": f"{in_dim} 维"},
-                {"name": "编码 Linear → 128", "shape": "ReLU"},
+                {"name": "编码 Linear → 128", "shape": "ReLU + Dropout(0.2)"},
                 {"name": "瓶颈 code → 32", "shape": "ReLU (压缩)"},
                 {"name": "解码 Linear → 128", "shape": "ReLU"},
                 {"name": "重构输出", "shape": f"{in_dim} 维"},
@@ -289,10 +316,7 @@ def model_info():
             "oversample": "小类(<200)过采样到200 (U2R/R2L few-shot)",
             "focal_loss": "关 (实测拖累OOD检测)",
         },
-        "results": {
-            "unknown_f1": 0.638, "unknown_p": 0.620, "unknown_r": 0.656,
-            "known_acc": 0.913, "overall_acc": 0.809, "tnr": 0.910,
-        },
+        "results": _current_results(),
     }
 
 

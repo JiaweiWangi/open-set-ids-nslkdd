@@ -38,7 +38,7 @@
     </div>
     <div class="card warn">
       <h2>⚠️ 数据极限说明</h2>
-      <p>以下未知攻击在 KDD 原始 41 特征上与已知类 <strong>100% 重叠</strong>，属数据集固有局限，任何基于该数据的方案都无法检出：</p>
+      <p>以下未知攻击无法检出,原因是<strong>特征重叠</strong>(如 saint≈satan)或<strong>锚点类标签漂移</strong>(如 snmpguess 的锚点 guess_passwd 在测试集是新模式)。属 NSL-KDD 数据固有局限,非方法问题:</p>
       <div id="overlap-list"></div>
     </div>
   </section>
@@ -110,6 +110,11 @@
       <div class="card">
         <h2>未知攻击检出率</h2>
         <div id="chart-unknown-detect" class="chart"></div>
+      </div>
+      <div class="card">
+        <h2>ROC / PR 曲线 (未知检测)</h2>
+        <p class="hint">把未知检测视作二分类(unknown=正),陌生度分数为判别值。圆点为当前工作点(TNR=0.91)。AUC 越接近 1 越好。</p>
+        <div id="chart-roc-pr" class="chart tall"></div>
       </div>
       <div class="card">
         <h2>已知类分类表现</h2>
