@@ -104,6 +104,27 @@ def train_ae(X, in_dim):
     return model
 
 
+def save_model(clf, ae, enc, known_classes, in_dim, n_classes,
+              fuse_weights, model_dir="models"):
+    """保存模型权重 + 预处理器 + 类别映射 + 融合配置，供 WebUI 加载。"""
+    import os, pickle, json
+    os.makedirs(model_dir, exist_ok=True)
+    torch.save(clf.state_dict(), f"{model_dir}/classifier.pt")
+    torch.save(ae.state_dict(), f"{model_dir}/autoencoder.pt")
+    with open(f"{model_dir}/encoder.pkl", "wb") as f:
+        pickle.dump(enc, f)
+    meta = {
+        "known_classes": known_classes,
+        "in_dim": in_dim,
+        "n_classes": n_classes,
+        "fuse_weights": fuse_weights,   # {"err":0.818, "smax":0.182}
+        "q_threshold": 0.91,            # TNR 分位
+    }
+    with open(f"{model_dir}/classes.json", "w") as f:
+        json.dump(meta, f, indent=2)
+    print(f"  模型已保存到 {model_dir}/ (classifier.pt, autoencoder.pt, encoder.pkl, classes.json)")
+
+
 @torch.no_grad()
 def get_activations(model, X, batch=2048):
     model.eval()
@@ -127,6 +148,13 @@ def ae_recon_err(model, X, batch=2048):
         err = ((recon - xb) ** 2).mean(dim=1).cpu().numpy()
         errs.append(err)
     return np.concatenate(errs)
+
+
+def softmax_max(logits):
+    """softmax 最大概率（越高越像已知类）。"""
+    p = np.exp(logits - logits.max(1, keepdims=True))
+    p = p / p.sum(1, keepdims=True)
+    return p.max(1)
 
 
 def loo_threshold_calibration(scores_known, scores_loo_unknown, target_tnr=0.95):
@@ -177,6 +205,11 @@ def main():
     print("\n=== 训练自编码器 ===")
     ae = train_ae(Xtr_train, in_dim)
 
+    # 保存模型供 WebUI 加载
+    print("\n=== 保存模型 ===")
+    save_model(clf, ae, enc, known_classes, in_dim, n_classes,
+               fuse_weights={"err": 0.818, "smax": 0.182})
+
     print("\n=== 提取激活向量 ===")
     av_train, logits_train = get_activations(clf, Xtr_train)
     av_val, logits_val = get_activations(clf, Xtr_val)
@@ -212,10 +245,6 @@ def main():
     else:
         om_val = np.zeros((len(av_val), 2)); om_test = np.zeros((len(av_test), 2))
 
-    def softmax_max(logits):
-        p = np.exp(logits - logits.max(1, keepdims=True))
-        p = p / p.sum(1, keepdims=True)
-        return p.max(1)
     smax_val = softmax_max(logits_val)
     smax_test = softmax_max(logits_test)
 

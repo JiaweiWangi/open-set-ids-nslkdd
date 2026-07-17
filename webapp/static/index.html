@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSL-KDD 开集入侵检测</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🛡️ NSL-KDD 开集入侵检测系统</h1>
+    <p class="subtitle">深度学习 (MLP 分类器 + 自编码器 OOD) · 已知 23 类识别 + 未知攻击检测</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="overview">📊 数据集概览</button>
+    <button class="tab-btn" data-tab="evaluate">🔍 批量评估</button>
+  </nav>
+
+  <!-- Tab 1: 数据集概览 -->
+  <section id="tab-overview" class="tab-content active">
+    <div class="card">
+      <h2>数据集概况</h2>
+      <div id="overview-stats" class="stats-grid"></div>
+    </div>
+    <div class="card">
+      <h2>训练集类别分布</h2>
+      <div id="chart-train-dist" class="chart"></div>
+    </div>
+    <div class="card">
+      <h2>未知攻击 (测试集独有)</h2>
+      <p class="hint">测试集含 17 种训练集未见过的攻击，共 3750 条。模型需识别为 "unknown"。</p>
+      <div id="unknown-table"></div>
+    </div>
+    <div class="card warn">
+      <h2>⚠️ 数据极限说明</h2>
+      <p>以下未知攻击在 KDD 原始 41 特征上与已知类 <strong>100% 重叠</strong>，属数据集固有局限，任何基于该数据的方案都无法检出：</p>
+      <div id="overlap-list"></div>
+    </div>
+  </section>
+
+  <!-- Tab 2: 批量评估 -->
+  <section id="tab-evaluate" class="tab-content">
+    <div class="card">
+      <h2>批量评估</h2>
+      <div class="eval-controls">
+        <label>测试集:
+          <select id="test-file-select"></select>
+        </label>
+        <button id="btn-evaluate" class="primary">🚀 开始评估</button>
+        <span id="eval-status" class="status"></span>
+      </div>
+    </div>
+    <div id="eval-results" style="display:none">
+      <div class="card">
+        <h2>核心指标</h2>
+        <div id="eval-stats" class="stats-grid"></div>
+      </div>
+      <div class="card">
+        <h2>未知攻击检出率</h2>
+        <div id="chart-unknown-detect" class="chart"></div>
+      </div>
+      <div class="card">
+        <h2>已知类分类表现</h2>
+        <div id="known-table"></div>
+      </div>
+      <div class="card">
+        <h2>混淆矩阵 (24类: 23已知 + unknown)</h2>
+        <div id="chart-confusion" class="chart tall"></div>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>
