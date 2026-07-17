@@ -8,7 +8,7 @@ NSL-KDD 开集入侵检测 WebUI 后端 (FastAPI)。
 
 启动: uv run uvicorn webapp.app:app --reload
 """
-import os, sys
+import os, sys, time, threading, contextlib, traceback
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -41,6 +41,57 @@ def get_predictor():
 
 class EvaluateRequest(BaseModel):
     test_file: str | None = None  # 默认用 train_test
+
+
+# ===== 训练任务状态 (后台线程 + stdout 捕获) =====
+_train_state = {
+    "running": False, "done": False, "error": None,
+    "logs": [], "stage": "", "metrics": None,
+    "started": None, "finished": None, "config": None,
+}
+_train_lock = threading.Lock()
+
+
+class _Stream:
+    """把 print 输出收集到共享 list，供前端轮询。"""
+    def __init__(self, sink):
+        self.sink = sink
+    def write(self, s):
+        if s:
+            self.sink.append(s)
+    def flush(self):
+        pass
+
+
+class TrainConfig(BaseModel):
+    epochs_cls: int = 40
+    epochs_ae: int = 30
+    full_ood: bool = False   # 是否跑全量 OOD 对照(马氏/OpenMax/OOD头)
+
+
+def _run_training(cfg: dict):
+    """后台线程：跑 train.main() 并捕获日志，完成后自动评估。"""
+    import train as T
+    T.EPOCHS_CLS = cfg["epochs_cls"]
+    T.EPOCHS_AE = cfg["epochs_ae"]
+    os.environ["FULL_OOD"] = "1" if cfg["full_ood"] else "0"
+    sink = _train_state["logs"]
+    stream = _Stream(sink)
+    try:
+        with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
+            T.main()
+        # 训练完成 → 重载模型并评估
+        global _predictor
+        _predictor = None
+        p = get_predictor()
+        _train_state["metrics"] = p.evaluate(TEST_FILE)
+        _train_state["stage"] = "完成"
+    except Exception as e:
+        _train_state["error"] = f"{e}\n{traceback.format_exc()}"
+    finally:
+        _train_state["running"] = False
+        _train_state["done"] = True
+        _train_state["finished"] = time.time()
 
 
 @app.get("/")
@@ -115,6 +166,49 @@ def test_files():
             if f.endswith(".txt"):
                 files.append({"name": f"Test/{f}", "path": os.path.join(test_dir, f)})
     return files
+
+
+@app.post("/api/train")
+def start_train(req: TrainConfig):
+    """启动一次训练(后台线程)。同一时刻只允许一个训练任务。"""
+    cfg = req.model_dump() if hasattr(req, "model_dump") else req.dict()
+    with _train_lock:
+        if _train_state["running"]:
+            raise HTTPException(409, "已有训练任务在运行,请等待完成")
+        _train_state.update(
+            running=True, done=False, error=None, logs=[], stage="启动中",
+            metrics=None, started=time.time(), finished=None, config=cfg,
+        )
+    t = threading.Thread(target=_run_training, args=(cfg,), daemon=True)
+    t.start()
+    return {"status": "started", "config": cfg}
+
+
+@app.get("/api/train/status")
+def train_status():
+    """轮询训练进度:日志、当前阶段、完成后的评估指标。"""
+    logs = "".join(_train_state["logs"])
+    stage = _train_state["stage"]
+    if _train_state["running"]:
+        for line in reversed(_train_state["logs"]):
+            s = line.strip()
+            if s.startswith("==="):
+                stage = s.strip("= ").strip()
+                break
+    elapsed = None
+    if _train_state["started"]:
+        end = _train_state["finished"] or time.time()
+        elapsed = round(end - _train_state["started"], 1)
+    return {
+        "running": _train_state["running"],
+        "done": _train_state["done"],
+        "error": _train_state["error"],
+        "stage": stage,
+        "logs": logs[-12000:],
+        "elapsed": elapsed,
+        "metrics": _train_state["metrics"],
+        "config": _train_state["config"],
+    }
 
 
 @app.get("/api/model")

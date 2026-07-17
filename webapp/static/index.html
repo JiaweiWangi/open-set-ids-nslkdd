@@ -10,14 +10,15 @@
 <body>
 <div class="container">
   <header>
-    <h1>🛡️ NSL-KDD 开集入侵检测系统</h1>
-    <p class="subtitle">深度学习 (MLP 分类器 + 自编码器 OOD) · 已知 23 类识别 + 未知攻击检测</p>
+    <h1>NSL-KDD 开集入侵检测</h1>
+    <p class="subtitle">深度学习方案 · <b>MLP 分类器 + 自编码器 + OpenMax</b> · 已知 23 类识别 + 未知攻击检测</p>
   </header>
 
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="overview">📊 数据集概览</button>
-    <button class="tab-btn" data-tab="evaluate">🔍 批量评估</button>
-    <button class="tab-btn" data-tab="model">🧠 模型方案</button>
+    <button class="tab-btn active" data-tab="overview">数据集</button>
+    <button class="tab-btn" data-tab="train">训练</button>
+    <button class="tab-btn" data-tab="evaluate">评估</button>
+    <button class="tab-btn" data-tab="model">模型方案</button>
   </nav>
 
   <!-- Tab 1: 数据集概览 -->
@@ -42,15 +43,59 @@
     </div>
   </section>
 
-  <!-- Tab 2: 批量评估 -->
+  <!-- Tab 2: 训练 -->
+  <section id="tab-train" class="tab-content">
+    <div class="card">
+      <h2>训练配置</h2>
+      <p class="hint">在 KDDTrain+ 上重新训练 MLP 分类器 + 自编码器,训练完自动评估并覆盖 models/。MPS/GPU 加速,约 1-3 分钟。</p>
+      <div class="train-controls">
+        <label>分类器 epoch
+          <input type="number" id="cfg-epochs-cls" value="40" min="1" max="200">
+        </label>
+        <label>自编码器 epoch
+          <input type="number" id="cfg-epochs-ae" value="30" min="1" max="200">
+        </label>
+        <label class="check">
+          <input type="checkbox" id="cfg-full-ood"> 全量 OOD 对照 (马氏/OpenMax/OOD头)
+        </label>
+        <button id="btn-train" class="primary">开始训练</button>
+        <span id="train-status" class="status"></span>
+      </div>
+    </div>
+
+    <div id="train-progress" class="card" style="display:none">
+      <h2>训练进度 <span id="train-stage" class="stage-badge"></span></h2>
+      <div class="train-meta">
+        <span id="train-elapsed"></span>
+      </div>
+      <div class="train-meter"><div id="train-meter-fill" class="train-meter-fill"></div></div>
+      <pre id="train-log" class="train-log"></pre>
+    </div>
+
+    <div id="train-results" style="display:none">
+      <div class="card">
+        <h2>训练完成 · 评估指标</h2>
+        <div id="train-stats" class="stats-grid"></div>
+      </div>
+      <div class="card">
+        <h2>未知攻击检出率</h2>
+        <div id="chart-train-unknown" class="chart"></div>
+      </div>
+      <div class="card">
+        <p class="hint">完整评估(含混淆矩阵、已知类明细)见「评估」Tab。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 3: 批量评估 -->
   <section id="tab-evaluate" class="tab-content">
     <div class="card">
       <h2>批量评估</h2>
       <div class="eval-controls">
-        <label>测试集:
+        <label>测试集
           <select id="test-file-select"></select>
         </label>
-        <button id="btn-evaluate" class="primary">🚀 开始评估</button>
+        <button id="btn-evaluate" class="primary">开始评估</button>
         <span id="eval-status" class="status"></span>
       </div>
     </div>
