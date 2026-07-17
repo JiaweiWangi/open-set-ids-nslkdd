@@ -104,13 +104,18 @@ document.getElementById('btn-evaluate').addEventListener('click', async () => {
 function renderEval(d) {
   document.getElementById('eval-results').style.display = 'block';
   const u = d.unknown_detection, k = d.known_classification, o = d.overall;
+  // 未知检测准确率 = (TP+TN)/总数(后端返回了混淆四元,前端补算)
+  const uAcc = ((u.TP + u.TN) / (u.TP + u.FP + u.FN + u.TN)).toFixed(3);
   const stats = [
-    {label: '未知检测 F1', value: u.F1, cls: 'green'},
-    {label: '未知 P', value: u.P, cls: 'blue'},
-    {label: '未知 R', value: u.R, cls: 'blue'},
-    {label: '已知类 TNR', value: u.TNR, cls: 'green'},
-    {label: '已知分类 acc', value: k.acc, cls: 'orange'},
-    {label: '整体 acc', value: o.acc, cls: 'orange'},
+    {label: '未知检测 准确率', value: uAcc, cls: 'blue'},
+    {label: '未知检测 精确率', value: u.P, cls: 'blue'},
+    {label: '未知检测 召回率', value: u.R, cls: 'blue'},
+    {label: '未知检测 F1值', value: u.F1, cls: 'green'},
+    {label: '已知类 正确接受率', value: u.TNR, cls: 'green'},
+    {label: '已知类分类 准确率', value: k.acc, cls: 'orange'},
+    {label: '已知类 macro-F1', value: k.macro_f1, cls: 'orange'},
+    {label: '整体 准确率', value: o.acc, cls: 'orange'},
+    {label: '整体 macro-F1', value: o.macro_f1, cls: 'orange'},
   ];
   document.getElementById('eval-stats').innerHTML = stats.map(s =>
     `<div class="stat-item"><div class="label">${s.label}</div><div class="value ${s.cls}">${s.value}</div></div>`
@@ -213,8 +218,8 @@ async function loadModel() {
     {label: '已知类数', value: d.n_classes, cls: 'green'},
     {label: '分类器参数量', value: d.clf_params.toLocaleString(), cls: 'blue'},
     {label: '自编码器参数量', value: d.ae_params.toLocaleString(), cls: 'blue'},
-    {label: '未知检测 F1', value: d.results.unknown_f1, cls: 'green'},
-    {label: '已知类 acc', value: d.results.known_acc, cls: 'orange'},
+    {label: '未知检测 F1值', value: d.results.unknown_f1, cls: 'green'},
+    {label: '已知类 准确率', value: d.results.known_acc, cls: 'orange'},
   ];
   document.getElementById('model-stats').innerHTML = stats.map(s =>
     `<div class="stat-item"><div class="label">${s.label}</div><div class="value ${s.cls}">${s.value}</div></div>`
@@ -315,13 +320,17 @@ function stageFraction(stage) {
 function renderTrainMetrics(d) {
   document.getElementById('train-results').style.display = 'block';
   const u = d.unknown_detection, k = d.known_classification, o = d.overall;
+  const uAcc = ((u.TP + u.TN) / (u.TP + u.FP + u.FN + u.TN)).toFixed(3);
   const stats = [
-    {label: '未知检测 F1', value: u.F1, cls: 'green'},
-    {label: '未知 P', value: u.P, cls: 'blue'},
-    {label: '未知 R', value: u.R, cls: 'blue'},
-    {label: '已知类 TNR', value: u.TNR, cls: 'green'},
-    {label: '已知分类 acc', value: k.acc, cls: 'orange'},
-    {label: '整体 acc', value: o.acc, cls: 'orange'},
+    {label: '未知检测 准确率', value: uAcc, cls: 'blue'},
+    {label: '未知检测 精确率', value: u.P, cls: 'blue'},
+    {label: '未知检测 召回率', value: u.R, cls: 'blue'},
+    {label: '未知检测 F1值', value: u.F1, cls: 'green'},
+    {label: '已知类 正确接受率(TNR)', value: u.TNR, cls: 'green'},
+    {label: '已知类分类 准确率', value: k.acc, cls: 'orange'},
+    {label: '已知类 macro-F1', value: k.macro_f1, cls: 'orange'},
+    {label: '整体 准确率', value: o.acc, cls: 'orange'},
+    {label: '整体 macro-F1', value: o.macro_f1, cls: 'orange'},
   ];
   document.getElementById('train-stats').innerHTML = stats.map(s =>
     `<div class="stat-item"><div class="label">${s.label}</div><div class="value ${s.cls}">${s.value}</div></div>`
