@@ -50,7 +50,7 @@ async function loadOverview() {
         <tr>
           <td>${u.attack}</td>
           <td>${u.n}</td>
-          <td>${u.is_overlap ? '<span class="tag overlap">重叠(无法检出)</span>' : '<span class="tag ok">可检出</span>'}</td>
+          <td>${u.is_overlap ? '<span class="tag overlap">无法检出</span>' : '<span class="tag ok">可检出</span>'}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
