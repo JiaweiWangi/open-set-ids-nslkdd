@@ -7,8 +7,11 @@
   - evaluate(test_file): 跑测试集，返回完整评估指标
 """
 import os, sys, pickle, json
-# 把项目根目录加入 path，以便 import 上层的 data_utils/model/train
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# 把项目根目录 + src/ 加入 path，以便 import 上层的 data_utils/model/train
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+for _p in (_ROOT, os.path.join(_ROOT, "src")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 import numpy as np
 import torch
 

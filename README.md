@@ -79,14 +79,14 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 uv add torch numpy pandas scipy scikit-learn fastapi uvicorn
 
 # 训练(默认过采样开,约 1-3 分钟,MPS/CPU)
-uv run python train.py
+uv run python src/train.py
 
 # 全量 OOD 对照(额外跑马氏/OpenMax/OOD头,慢,仅实验)
 #mac运行
-FULL_OOD=1 uv run python train.py
+FULL_OOD=1 uv run python src/train.py
 
 #windows运行
-$env:FULL_OOD = "1"; uv run python train.py
+$env:FULL_OOD = "1"; uv run python src/train.py
 ```
 
 ### WebUI
@@ -109,9 +109,9 @@ NSL-KDD,每条记录 41 特征(3 符号 + 38 数值)+ 标签 + 难度。
 
 | 文件 | 内容 |
 |---|---|
-| `KDDTrain+.txt` | 训练集(125,973 条,23 类) |
-| `train_test` | 测试集 KDDTest+(22,544 条,38 类,含 17 种未知) |
-| `Test/` | KDDTest-21 等(更难子集) |
+| `data/KDDTrain+.txt` | 训练集(125,973 条,23 类) |
+| `data/train_test` | 测试集 KDDTest+(22,544 条,38 类,含 17 种未知) |
+| `data/Test/` | KDDTest-21 等(更难子集) |
 
 预处理:符号特征 one-hot(train 词表对齐,test 未见类别留全零)+ 数值 log1p 抗长尾 + standardize;删常数列 f19。
 
@@ -119,15 +119,16 @@ NSL-KDD,每条记录 41 特征(3 符号 + 38 数值)+ 标签 + 难度。
 
 | 文件 | 作用 |
 |---|---|
-| `data_utils.py` | 数据加载与预处理(log1p+one-hot+删常数列) |
-| `model.py` | Classifier(MLP) + Autoencoder |
-| `train.py` | 主流程:训练→推理→融合→标定→评估 |
-| `infer.py` | 模型加载与推理(供 WebUI 调用) |
-| `openmax.py` | OpenMax(Weibull,FULL_OOD 时用) |
-| `ood.py` / `ood_head.py` | 马氏距离 / OOD 头(FULL_OOD 时用) |
-| `cond_ood.py` | 类条件窗口马氏(实验模块,未集成) |
+| `src/data_utils.py` | 数据加载与预处理(log1p+one-hot+删常数列) |
+| `src/model.py` | Classifier(MLP) + Autoencoder |
+| `src/train.py` | 主流程:训练→推理→融合→标定→评估 |
+| `webapp/infer.py` | 模型加载与推理(供 WebUI 调用) |
+| `src/openmax.py` | OpenMax(Weibull,FULL_OOD 时用) |
+| `src/ood.py` / `src/ood_head.py` | 马氏距离 / OOD 头(FULL_OOD 时用) |
+| `src/cond_ood.py` | 类条件窗口马氏(实验模块,未集成) |
 | `webapp/` | FastAPI 后端 + 静态前端 |
 | `models/` | 训练保存的模型权重(gitignore,训练后生成) |
+| `outputs/` | 训练产物:预测/信号 .npy + 日志(gitignore) |
 
 ## 关键技术决策
 
@@ -140,7 +141,7 @@ NSL-KDD,每条记录 41 特征(3 符号 + 38 数值)+ 标签 + 难度。
 ## 复现
 
 ```bash
-uv run python train.py   # SEED=42,训练完自动评估,输出与 README 指标一致
+uv run python src/train.py   # SEED=42,训练完自动评估,输出与 README 指标一致
 ```
 
 完整实验历程见 `REPORT.md`。

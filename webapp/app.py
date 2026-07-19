@@ -16,7 +16,8 @@ from pydantic import BaseModel
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
-for _p in (_ROOT, _HERE):
+_SRC = os.path.join(_ROOT, "src")
+for _p in (_ROOT, _HERE, _SRC):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 from data_utils import load_csv
@@ -28,8 +29,8 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TRAIN_FILE = os.path.join(ROOT, "KDDTrain+.txt")
-TEST_FILE = os.path.join(ROOT, "train_test")
+TRAIN_FILE = os.path.join(ROOT, "data", "KDDTrain+.txt")
+TEST_FILE = os.path.join(ROOT, "data", "train_test")
 
 # 懒加载模型 (首次 evaluate 时加载)
 _predictor = None
@@ -168,7 +169,7 @@ def test_files():
     if os.path.exists(TEST_FILE):
         files.append({"name": "train_test (KDDTest+)", "path": TEST_FILE})
     # Test/ 目录下
-    test_dir = os.path.join(ROOT, "Test")
+    test_dir = os.path.join(ROOT, "data", "Test")
     if os.path.isdir(test_dir):
         for f in sorted(os.listdir(test_dir)):
             if f.endswith(".txt"):
@@ -256,7 +257,7 @@ def model_info():
 
     # 参数量
     import sys
-    sys.path.insert(0, root)
+    sys.path.insert(0, os.path.join(root, "src"))
     from model import Classifier, Autoencoder
     clf = Classifier(in_dim, n_classes)
     ae = Autoencoder(in_dim)

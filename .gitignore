@@ -8,3 +8,4 @@ diag.log
 uv.lock
 models/
 *.log
+outputs/

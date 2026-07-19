@@ -40,8 +40,14 @@ EPOCHS_CLS = 40
 EPOCHS_AE = 30
 BATCH = 512
 
-TRAIN_FILE = "KDDTrain+.txt"
-TEST_FILE = "train_test"
+# 路径基于项目根(src/ 的父级),便于从任意 cwd 运行
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(ROOT, "data")
+OUT_DIR = os.path.join(ROOT, "outputs")
+os.makedirs(OUT_DIR, exist_ok=True)
+
+TRAIN_FILE = os.path.join(DATA_DIR, "KDDTrain+.txt")
+TEST_FILE = os.path.join(DATA_DIR, "train_test")
 
 
 def class_weights(labels, n_classes):
@@ -140,9 +146,11 @@ def train_ae(X, in_dim):
 
 
 def save_model(clf, ae, enc, known_classes, in_dim, n_classes,
-              fuse_weights, model_dir="models"):
+              fuse_weights, model_dir=None):
     """保存模型权重 + 预处理器 + 类别映射 + 融合配置，供 WebUI 加载。"""
     import os, pickle, json
+    if model_dir is None:
+        model_dir = os.path.join(ROOT, "models")
     os.makedirs(model_dir, exist_ok=True)
     torch.save(clf.state_dict(), f"{model_dir}/classifier.pt")
     torch.save(ae.state_dict(), f"{model_dir}/autoencoder.pt")
@@ -437,17 +445,17 @@ def main():
         print(f"  {'(macro平均)':16s}       {avg_rec:>6.3f} {avg_acc:>7.3f} {'':>6s} {avg_f1:>6.3f}")
 
     # 保存预测 + 所有原始 OOD 信号（离线调权重无需重训）
-    np.save("pred_labels.npy", pred_label)
-    np.save("pred_unknown_flag.npy", is_unknown_pred)
-    np.save("fuse_test.npy", fuse_test)
-    np.save("sig_ood_test.npy", ood_test)
-    np.save("sig_mah_test.npy", mah_test)
-    np.save("sig_err_test.npy", err_test)
-    np.save("sig_smax_test.npy", smax_test)
-    np.save("sig_om_test.npy", om_test[:, -1])
-    np.save("yte_str.npy", np.array(yte_str))
-    np.save("pred_cls_test.npy", pred_cls)
-    print("\n预测已保存: pred_labels.npy 等 + 5个信号 sig_*.npy")
+    np.save(os.path.join(OUT_DIR, "pred_labels.npy"), pred_label)
+    np.save(os.path.join(OUT_DIR, "pred_unknown_flag.npy"), is_unknown_pred)
+    np.save(os.path.join(OUT_DIR, "fuse_test.npy"), fuse_test)
+    np.save(os.path.join(OUT_DIR, "sig_ood_test.npy"), ood_test)
+    np.save(os.path.join(OUT_DIR, "sig_mah_test.npy"), mah_test)
+    np.save(os.path.join(OUT_DIR, "sig_err_test.npy"), err_test)
+    np.save(os.path.join(OUT_DIR, "sig_smax_test.npy"), smax_test)
+    np.save(os.path.join(OUT_DIR, "sig_om_test.npy"), om_test[:, -1])
+    np.save(os.path.join(OUT_DIR, "yte_str.npy"), np.array(yte_str))
+    np.save(os.path.join(OUT_DIR, "pred_cls_test.npy"), pred_cls)
+    print(f"\n预测已保存到 {OUT_DIR}/: pred_labels.npy 等 + 5个信号 sig_*.npy")
     print("=== 完成 ===")
 
 
