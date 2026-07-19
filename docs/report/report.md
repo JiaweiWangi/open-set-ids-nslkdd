@@ -122,7 +122,7 @@ flowchart LR
     C --> E[softmax 最大概率 smax]
     D --> F[norm01 归一化]
     E --> G[1 − smax<br/>归一化]
-    F --> H[融合分数<br/>0.818·err + 0.182·(1−smax)]
+    F --> H[融合分数<br/>0.818·err + 0.182·（1−smax）]
     G --> H
     H --> I{分数 > 阈值}
     I -->|是| J[unknown]
