@@ -1,0 +1,34 @@
+{
+  "known_classes": [
+    "back",
+    "buffer_overflow",
+    "ftp_write",
+    "guess_passwd",
+    "imap",
+    "ipsweep",
+    "land",
+    "loadmodule",
+    "multihop",
+    "neptune",
+    "nmap",
+    "normal",
+    "perl",
+    "phf",
+    "pod",
+    "portsweep",
+    "rootkit",
+    "satan",
+    "smurf",
+    "spy",
+    "teardrop",
+    "warezclient",
+    "warezmaster"
+  ],
+  "in_dim": 121,
+  "n_classes": 23,
+  "fuse_weights": {
+    "err": 0.818,
+    "smax": 0.182
+  },
+  "q_threshold": 0.91
+}

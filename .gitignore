@@ -1,11 +1,7 @@
 __pycache__/
 *.pyc
 .venv/
-*.npy
-run.log
-diag.log
 .DS_Store
 uv.lock
-models/
 *.log
-outputs/
+outputs/logs/
